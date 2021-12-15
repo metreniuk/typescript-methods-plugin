@@ -10,7 +10,7 @@ var change_case_all_1 = require("change-case-all");
 var MethodsVisitor = /** @class */ (function () {
     function MethodsVisitor() {
         var _this = this;
-        this.typeImportsPath = "./types.generated";
+        this.typeImportsPath = "./types";
         this.mutations = new Set();
         this.subscriptions = new Set();
         this.queries = new Set();

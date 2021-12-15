@@ -1,6 +1,6 @@
 {
   "name": "graphql-typescript-methods",
-  "version": "0.0.21",
+  "version": "0.0.22",
   "description": "GraphQL Code Generator plugin for generating mutations and subscriptions",
   "license": "MIT",
   "scripts": {
