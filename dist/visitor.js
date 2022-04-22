@@ -43,7 +43,7 @@ var MethodsVisitor = /** @class */ (function () {
                 .concat(mutationsImports)
                 .concat(subscriptionsImports)
                 .reduce(function (acc, x) { return __spreadArray(__spreadArray([], acc), x); }, []);
-            return "\n      import { ApolloClient, NormalizedCacheObject } from '@apollo/client';\n      import {\n        " + imports.join(",\n") + "\n      } from '" + _this.typeImportsPath + "';\n\n      ";
+            return "\n      import { ApolloClient, NormalizedCacheObject, QueryOptions } from '@apollo/client';\n      import {\n        " + imports.join(",\n") + "\n      } from '" + _this.typeImportsPath + "';\n\n      ";
         };
         this.getBaseClass = function () {
             var queries = Array.from(_this.queries);
@@ -70,7 +70,7 @@ var MethodsVisitor = /** @class */ (function () {
                 hasVariables: hasVariables,
                 type: "query",
             });
-            return "\n  query" + name + " = " + paramsDeclaration + " => {\n    return this.query<\n      " + name + "Query,\n      " + name + "QueryVariables\n      >({\n        query: " + name + "Document,\n        " + _this.getVarsAndOptions(hasVariables) + "\n    });\n  }";
+            return "\n  query" + name + " = " + paramsDeclaration + " => {\n    return this.query<\n      " + name + "Query,\n      " + name + "QueryVariables\n      >({\n        query: " + name + "Document,\n        " + _this.getVarsAndOptions(hasVariables) + ",\n        notifyOnNetworkStatusChange: true,\n    });\n  }";
         };
         this.toSubscription = function (_a) {
             var name = _a.name, hasVariables = _a.hasVariables;
@@ -90,14 +90,24 @@ var MethodsVisitor = /** @class */ (function () {
         this.getParamsDeclaration = function (ops) {
             var opName = _this.getOperationName(ops.type);
             return ops.hasVariables
-                ? "(variables: " + ops.name + opName + "Variables, " + _this.getRequestOptions(ops.type) + ")"
+                ? "(variables: " + ops.name + opName + "Variables, " + _this.getRequestOptions(ops.type, "" + ops.name + opName + "Variables") + ")"
                 : "(" + _this.getRequestOptions(ops.type) + ")";
         };
-        this.getRequestOptions = function (type) {
-            var isMutation = type && type === "mutation";
-            return isMutation
-                ? "options?: { fetchPolicy: 'network-only' | 'no-cache' }"
-                : "options?: { fetchPolicy: 'network-only' | 'cache-first' | 'no-cache' | 'cache-only' }";
+        this.getRequestOptions = function (type, variablesType) {
+            if (variablesType === void 0) { variablesType = '{}'; }
+            var isMutation = type === "mutation";
+            var isSubscription = type === "subscription";
+            var isQuery = type === "query";
+            if (isMutation) {
+                return "options?: { fetchPolicy: 'network-only' | 'no-cache' }";
+            }
+            else if (isSubscription) {
+                return "options?: { fetchPolicy: 'network-only' | 'cache-first' | 'no-cache' | 'cache-only' }";
+            }
+            else if (isQuery) {
+                return "options?: Omit<QueryOptions<" + variablesType + ">, 'query' | 'variables'>";
+            }
+            return '';
         };
         this.getOperationName = function (type) {
             if (type === "query") {

@@ -33,7 +33,7 @@ export class MethodsVisitor {
       .reduce((acc, x) => [...acc, ...x], [])
 
     return `
-      import { ApolloClient, NormalizedCacheObject } from '@apollo/client';
+      import { ApolloClient, NormalizedCacheObject, QueryOptions } from '@apollo/client';
       import {
         ${imports.join(",\n")}
       } from '${this.typeImportsPath}';\n
@@ -101,7 +101,8 @@ export class MethodsVisitor {
       ${name}QueryVariables
       >({
         query: ${name}Document,
-        ${this.getVarsAndOptions(hasVariables)}
+        ${this.getVarsAndOptions(hasVariables)},
+        notifyOnNetworkStatusChange: true,
     });
   }`
   }
@@ -146,16 +147,25 @@ export class MethodsVisitor {
     let opName = this.getOperationName(ops.type)
     return ops.hasVariables
       ? `(variables: ${ops.name}${opName}Variables, ${this.getRequestOptions(
-          ops.type
+          ops.type,
+          `${ops.name}${opName}Variables`
         )})`
       : `(${this.getRequestOptions(ops.type)})`
   }
 
-  private getRequestOptions = (type?: OperationType) => {
-    let isMutation = type && type === "mutation"
-    return isMutation
-      ? `options?: { fetchPolicy: 'network-only' | 'no-cache' }`
-      : `options?: { fetchPolicy: 'network-only' | 'cache-first' | 'no-cache' | 'cache-only' }`
+  private getRequestOptions = (type: OperationType, variablesType: string = '{}') => {
+    let isMutation = type === "mutation"
+    let isSubscription = type === "subscription"
+    let isQuery = type === "query"
+    
+    if (isMutation) {
+      return `options?: { fetchPolicy: 'network-only' | 'no-cache' }`
+    } else if (isSubscription) {
+      return `options?: { fetchPolicy: 'network-only' | 'cache-first' | 'no-cache' | 'cache-only' }`
+    } else if (isQuery) {
+      return `options?: Omit<QueryOptions<${variablesType}>, 'query' | 'variables'>`
+    }
+    return ''
   }
 
   private getOperationName = (type: OperationType) => {
